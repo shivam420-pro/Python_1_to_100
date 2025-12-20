@@ -26,5 +26,7 @@ if height >= 120 :
     if Ride_Photo == "Y":
         bill += 3
         print(f" Your total bill is ${bill} ")
+    else :
+        print(f" Your total bill is ${bill} ")
 else :
     print(f" Sorry You are not Eligible to ride the Rollercoaster, your hight is {height}cm !!!!")
