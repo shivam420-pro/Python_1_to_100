@@ -7,10 +7,7 @@ reverse = 0
 
 while num > 0:
     digit = num % 10   #take the last digit from the digit 
-    
-    reverse = reverse * 10 + digit
-    print(reverse)
+    reverse = reverse * 10 + digit  
     num = num // 10
-    print(num)
 
 print("Reversed number is:", reverse)
