@@ -1,7 +1,7 @@
 #Check if a number is a palindrome
 #Example:  121 → 121
 
-num = int(input("Enter the number to reverse the digit :- "))
+num = int(input("Enter the number to check palindrome :- "))
 number = num
 
 reverse = 0
