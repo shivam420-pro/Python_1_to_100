@@ -15,6 +15,6 @@ def calculate_love_score(name1, name2):
     love_score = l + o + v + e
     
     total_score = int(str(total_ture_score)+str(love_score))
-    print(total_score)
+    print(f"Love Score {total_score}")
     
 calculate_love_score("shivam", "angira")
