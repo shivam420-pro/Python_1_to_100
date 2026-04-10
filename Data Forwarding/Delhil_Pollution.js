@@ -7,7 +7,7 @@ const moment = require("moment");
 const TOKEN = "MTIwMzIwMjZfbWFnX2Zsb3dfc3lzdGVtX3NfaW5jXzEzMDE1OA==";
 const INDUSTRY_ID = "industry_6038";
 const STATION_ID = "station_13289"; // may or may not be used by API
-const DEVICE_ID = "D00319";
+const DEVICE_ID = "device_12478";
 
 const API_URL = `https://dpcccems.nic.in/dpccb-api/api/industry/${INDUSTRY_ID}/station/${STATION_ID}/data`;
 
