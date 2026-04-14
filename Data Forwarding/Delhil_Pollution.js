@@ -1,4 +1,4 @@
-const axios = require('axios');
+const axios = require("axios");
 const forge = require("node-forge");
 const moment = require("moment");
 
@@ -6,7 +6,7 @@ const moment = require("moment");
 
 const TOKEN = "MTIwMzIwMjZfbWFnX2Zsb3dfc3lzdGVtX3NfaW5jXzEzMDE1OA==";
 const INDUSTRY_ID = "industry_6038";
-const STATION_ID = "station_13289"; // may or may not be used by API
+const STATION_ID = "station_13289";
 const DEVICE_ID = "device_12478";
 
 const API_URL = `https://dpcccems.nic.in/dpccb-api/api/industry/${INDUSTRY_ID}/station/${STATION_ID}/data`;
@@ -23,16 +23,19 @@ YwIDAQAB
 
 /* ---------------- SIGNATURE ---------------- */
 function generateSignature(token) {
-    const timestamp = moment().utcOffset('+05:30').format("YYYY-MM-DD HH:mm:ss");
+    const timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
     const message = `${token}$*${timestamp}`;
 
-    const buffer = forge.util.createBuffer(message, 'utf8').getBytes();
     const publicKey = forge.pki.publicKeyFromPem(PUBLIC_KEY_PEM);
 
-    const encrypted = publicKey.encrypt(buffer, "RSA-OAEP", {
-        md: forge.md.sha256.create(),
-        mgf1: { md: forge.md.sha256.create() }
-    });
+    const encrypted = publicKey.encrypt(
+        forge.util.encodeUtf8(message),
+        "RSA-OAEP",
+        {
+            md: forge.md.sha256.create(),
+            mgf1: { md: forge.md.sha256.create() }
+        }
+    );
 
     return forge.util.encode64(encrypted);
 }
@@ -51,13 +54,11 @@ function encryptPayload(payload, token) {
     return forge.util.encode64(cipher.output.bytes());
 }
 
-/* ---------------- MAIN FUNCTION ---------------- */
+/* ---------------- MAIN ---------------- */
 async function sendData() {
     try {
-        // ✅ Epoch timestamp (IMPORTANT)
-        const timestamp = moment().valueOf();
+        const timestamp = Date.now(); // epoch ms
 
-        // ✅ CORRECT PAYLOAD FORMAT
         const payload = [
             {
                 deviceId: DEVICE_ID,
@@ -65,96 +66,67 @@ async function sendData() {
                     {
                         unit: "m3/hr",
                         flag: "U",
-                        parameter: "Flow",      // MUST match DPCC config
-                        value: 3.459,           // your dynamic value
+                        parameter: "Flow",
+                        value: 3.459,
                         timestamp: String(timestamp)
                     }
                 ]
             }
         ];
 
-        console.log("\n-------------------------------");
-        console.log("📤 RAW PAYLOAD:", JSON.stringify(payload, null, 2));
+        console.log("\n📤 PAYLOAD:", JSON.stringify(payload, null, 2));
 
-        // 🔐 Encrypt payload
         const encrypted = encryptPayload(payload, TOKEN);
-
-        // 🔑 Generate signature
         const signature = generateSignature(TOKEN);
 
-        const body = {
-            data: encrypted
-        };
+        const response = await axios.post(
+            API_URL,
+            { data: encrypted },
+            {
+                headers: {
+                    Authorization: `Basic ${TOKEN}`,
+                    "X-Device-Id": DEVICE_ID,
+                    "Signature": signature,   // ✅ FIXED
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
+                },
+                timeout: 15000,
+                validateStatus: () => true
+            }
+        );
 
-        const response = await axios.post(API_URL, body, {
-            headers: {
-                Authorization: `Basic ${TOKEN}`,
-                "X-Device-Id": DEVICE_ID,
-                signature: signature,
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            timeout: 10000,
-            validateStatus: () => true
-        });
+        console.log("\n🔹 STATUS:", response.status);
+        console.log("🔹 CONTENT-TYPE:", response.headers["content-type"]);
 
-        console.log("\n HTTP STATUS:", response.status);
-        console.log(" CONTENT-TYPE:", response.headers['content-type']);
+        // ✅ DEBUG RAW RESPONSE
+        console.log("\n📥 RAW RESPONSE:");
+        console.log(response.data);
 
-        // ✅ Handle JSON response
-        if (response.headers['content-type']?.includes('application/json')) {
-
-            const res = response.data;
-            console.log("📥 API RESPONSE:", res);
-
-            if (res.status === 1) {
-                console.log("✅ SUCCESS: Data uploaded successfully");
+        if (response.headers["content-type"]?.includes("application/json")) {
+            if (response.data.status === 1) {
+                console.log("✅ SUCCESS");
             } else {
-                console.log("❌ FAILED:", res.message || "Unknown error");
+                console.log("❌ FAILED:", response.data.message);
+            }
+        } else {
+            console.log("\n❌ HTML RESPONSE DETECTED");
 
-                switch (res.status) {
-                    case 10:
-                        console.log("⚠️ Invalid Token");
-                        break;
-                    case 101:
-                        console.log("⚠️ Invalid Industry ID");
-                        break;
-                    case 102:
-                        console.log("⚠️ Invalid Station ID");
-                        break;
-                    case 108:
-                        console.log("⚠️ Invalid Device ID");
-                        break;
+            if (typeof response.data === "string") {
+                if (response.data.includes("Access Denied")) {
+                    console.log("🚨 IP NOT WHITELISTED");
+                } else if (response.data.includes("404")) {
+                    console.log("🚨 WRONG API URL");
+                } else {
+                    console.log("🚨 SERVER BLOCKING / UNKNOWN ISSUE");
                 }
             }
-
-        } else {
-            console.log("❌ ERROR: Received HTML instead of JSON");
-            console.log("👉 Possible reasons:");
-            console.log("   - IP not whitelisted");
-            console.log("   - Wrong API URL");
-            console.log("   - Server blocking request");
         }
 
-    } catch (error) {
-        console.error("❌ REQUEST ERROR:", error.message);
+    } catch (err) {
+        console.error("❌ ERROR:", err.message);
     }
 }
 
-/* ---------------- AUTO RUN EVERY 30 SEC ---------------- */
+/* ---------------- RUN ---------------- */
 
-let isRunning = false;
-
-// Run once immediately
 sendData();
-
-// Run every 30 seconds
-setInterval(async () => {
-    if (isRunning) return;
-
-    isRunning = true;
-    console.log("\n⏱ Sending data every 30 seconds...");
-    await sendData();
-    isRunning = false;
-
-}, 30000);
