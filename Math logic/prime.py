@@ -3,9 +3,9 @@ def prime(num):
         return False
    else:
        for i in range(2,num):
-           print(i)
-           if num % i == 0:                
-            return True
+           if num % i == 0: 
+            return False
+       return True
 
             
 print(prime(10))
