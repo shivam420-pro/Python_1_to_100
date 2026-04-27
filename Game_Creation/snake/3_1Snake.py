@@ -1,8 +1,8 @@
 from turtle import Screen
 import time
-from snake_import import Snake
-from snake_food import Food
-from snake_score import Scoreboard
+from Game_Creation.snake.snake_import import Snake
+from Game_Creation.snake.snake_food import Food
+from Game_Creation.snake.snake_score import Scoreboard
 from tkinter import messagebox
 
 
