@@ -1,8 +1,8 @@
 from turtle import Screen
 import time
-from Game_Creation.snake.snake_import import Snake
-from Game_Creation.snake.snake_food import Food
-from Game_Creation.snake.snake_score import Scoreboard
+from snake_import import Snake
+from snake_food import Food
+from snake_score import Scoreboard
 from tkinter import messagebox
 
 
@@ -42,9 +42,10 @@ while game_is_on:
     for segment in snake.segments:
         if segment == snake.head:
             pass
-        elif snake.head.distance(segment) <10:
-            game_is_on = False
-            scoreboard.game_over()
+        elif snake.head.distance(segment) < 10:
+            # game_is_on = False
+            # scoreboard.game_over()
+            scoreboard.reset()
 
     # if head collides with any segment in the tail
     # trigger the Game over ..!
@@ -52,8 +53,11 @@ while game_is_on:
 
     #Detect collision with wall
     if snake.head.xcor() > 280 or snake.head.xcor() < -280 or snake.head.ycor() > 280 or snake.head.ycor() < -280:
-        game_is_on = False
-        scoreboard.game_over()
+        # game_is_on = False
+        # scoreboard.game_over()
+        scoreboard.reset()
+        snake.reset()
+
 
     if not game_is_on:
         scoreboard.game_over()
